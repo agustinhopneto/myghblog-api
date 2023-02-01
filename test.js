@@ -1,7 +1,5 @@
 const axios = require("axios").default;
 const path = require("path");
-const _ = require("lodash");
-const { result } = require("./json.json");
 
 const githubApi = axios.create({
   baseURL: "https://api.github.com/",
@@ -12,40 +10,6 @@ const githubApi = axios.create({
 });
 
 const ACCEPTED_BRANCHES = ["main", "master"];
-
-function getFilename(path) {
-  return path
-    .split("/")
-    .filter(function (value) {
-      return value && value.length;
-    })
-    .reverse()[0];
-}
-
-function findSubPaths(path) {
-  let rePath = path.replace("/", "\\/");
-  let re = new RegExp("^" + rePath + "[^\\/]*\\/?$");
-  return paths.filter(function (i) {
-    return i !== path && re.test(i);
-  });
-}
-
-function buildTree(path) {
-  path = path || "";
-  let nodeList = [];
-  findSubPaths(path).forEach(function (subPath) {
-    let nodeName = getFilename(subPath);
-    if (/\/$/.test(subPath)) {
-      var node = {};
-      node[nodeName] = buildTree(subPath);
-      nodeList.push(node);
-    } else {
-      nodeList.push(nodeName);
-    }
-  });
-
-  return nodeList;
-}
 
 async function listMDFiles({ user, repo }) {
   const { data: branches } = await githubApi.get(
@@ -61,7 +25,7 @@ async function listMDFiles({ user, repo }) {
       `/repos/${user}/${repo}/git/trees/${mainBranch}?recursive=1`
     );
 
-    const mdFilesArray = files.tree.reduce((acc, file) => {
+    const mdFiles = files.tree.reduce((acc, file) => {
       if (path.extname(String(file.path)).toLowerCase() === ".md") {
         acc.push(file.path);
       }
@@ -69,15 +33,11 @@ async function listMDFiles({ user, repo }) {
       return acc;
     }, []);
 
-    // mdFilesArray.unshift('.root/');
+    const tree = fileTree(mdFiles);
 
-    // const mdFiles = mdFilesArray.filter(
-    //   (file) => path.extname(String(file)).toLowerCase() === ".md"
-    // );
+    const parsedTree = parseTree(tree);
 
-    console.log(mdFilesArray);
-
-    return mdFilesArray;
+    return parsedTree;
   }
 
   console.log("ERROR: main branch not found");
@@ -130,7 +90,7 @@ async function getFileContent({ user, repo, filePath }) {
     "utf-8"
   );
 
-  console.log(response);
+  return response;
 }
 
 (async () => {
@@ -139,21 +99,11 @@ async function getFileContent({ user, repo, filePath }) {
     repo: "app-ideas",
   });
 
-  // const files = await listMDFiles({
-  //   user: "agustinhopneto",
-  //   repo: "morsa",
-  // });
+  const content = await getFileContent({
+    user: "florinpop17",
+    repo: "app-ideas",
+    filePath: files.at(-1).path,
+  });
 
-  const tree = fileTree(files);
-
-  const parsedTree = parseTree(tree);
-
-  console.log("cu", JSON.stringify(parsedTree, null, 2));
-
-  // console.log(
-  //   await listMDFiles({
-  //     user: "agustinhopneto",
-  //     repo: "morsa",
-  //   })
-  // );
+  console.log(content);
 })();
