@@ -60,13 +60,13 @@ async function listMDFiles({ user, repo }) {
       `/repos/${user}/${repo}/git/trees/${mainBranch}?recursive=1`
     );
 
-    const mdFilesArray = files.tree.map((file) => {
+    const mdFilesArray = files.tree.reduce((acc, file) => {
       if (path.extname(String(file.path)).toLowerCase() === ".md") {
-        return `.root/${file.path}`;
+        acc.push(`.root/${file.path}`);
       }
 
-      return `.root/${file.path}/`;
-    });
+      return acc;
+    }, []);
 
     mdFilesArray.unshift('.root/');
 
@@ -95,17 +95,17 @@ async function getFileContent({ user, repo, filePath }) {
 }
 
 (async () => {
-  // console.log(
-  //   await listMDFiles({
-  //     user: "florinpop17",
-  //     repo: "app-ideas",
-  //   })
-  // );
-
   console.log(
     await listMDFiles({
-      user: "agustinhopneto",
-      repo: "morsa",
+      user: "florinpop17",
+      repo: "app-ideas",
     })
   );
+
+  // console.log(
+  //   await listMDFiles({
+  //     user: "agustinhopneto",
+  //     repo: "morsa",
+  //   })
+  // );
 })();
