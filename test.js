@@ -1,6 +1,7 @@
 const axios = require("axios").default;
 const path = require("path");
 const _ = require("lodash");
+const { result } = require("./json.json");
 
 const githubApi = axios.create({
   baseURL: "https://api.github.com/",
@@ -62,13 +63,13 @@ async function listMDFiles({ user, repo }) {
 
     const mdFilesArray = files.tree.reduce((acc, file) => {
       if (path.extname(String(file.path)).toLowerCase() === ".md") {
-        acc.push(`.root/${file.path}`);
+        acc.push(file.path);
       }
 
       return acc;
     }, []);
 
-    mdFilesArray.unshift('.root/');
+    // mdFilesArray.unshift('.root/');
 
     // const mdFiles = mdFilesArray.filter(
     //   (file) => path.extname(String(file)).toLowerCase() === ".md"
@@ -76,10 +77,48 @@ async function listMDFiles({ user, repo }) {
 
     console.log(mdFilesArray);
 
-    return;
+    return mdFilesArray;
   }
 
   console.log("ERROR: main branch not found");
+}
+
+function fileTree(paths, tree = {}) {
+  return paths.reduce((fullTree, path) => {
+    const [first, ...rest] = path.split("/");
+
+    if (!rest.length) {
+      fullTree[first] = true;
+      return fullTree;
+    }
+
+    fullTree[first] = fileTree([rest.join("/")], fullTree[first]);
+
+    return fullTree;
+  }, tree);
+}
+
+function parseTree(tree, path = "") {
+  return Object.keys(tree).reduce((content, nodeKey) => {
+    const node = tree[nodeKey];
+
+    const fullPath = !path ? nodeKey : `${path}/${nodeKey}`;
+
+    if (node === true) {
+      content.push({
+        name: nodeKey,
+        path: fullPath,
+      });
+      return content;
+    }
+
+    content.push({
+      name: nodeKey,
+      items: parseTree(node, fullPath),
+    });
+
+    return content;
+  }, []);
 }
 
 async function getFileContent({ user, repo, filePath }) {
@@ -95,12 +134,21 @@ async function getFileContent({ user, repo, filePath }) {
 }
 
 (async () => {
-  console.log(
-    await listMDFiles({
-      user: "florinpop17",
-      repo: "app-ideas",
-    })
-  );
+  const files = await listMDFiles({
+    user: "florinpop17",
+    repo: "app-ideas",
+  });
+
+  // const files = await listMDFiles({
+  //   user: "agustinhopneto",
+  //   repo: "morsa",
+  // });
+
+  const tree = fileTree(files);
+
+  const parsedTree = parseTree(tree);
+
+  console.log("cu", JSON.stringify(parsedTree, null, 2));
 
   // console.log(
   //   await listMDFiles({
