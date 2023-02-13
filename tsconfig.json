@@ -6,9 +6,14 @@
     "forceConsistentCasingInFileNames": true,
     "strict": true,
     "skipLibCheck": true,
-    "rootDir": "src",
-    "outDir": "dist",
-    "experimentalDecorators": true,
+    "rootDir": "./src",
+    "outDir": "./dist",
     "strictPropertyInitialization": false,
-  }
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true
+  },
+  "exclude": [
+    "tests",
+    "dist"
+  ]
 }

@@ -1,14 +1,20 @@
 import path from 'node:path';
+import { container, injectable } from 'tsyringe';
 
+import { AppError } from '../../../shared/errors/app-error';
 import { GitHubAPI } from '../../../shared/providers/githubApi';
 import { GitHubRepoParamsDTO } from '../dtos/github-repo-params.dto';
-import { IListMDFiles, TreeNode } from '../interfaces/list-md-files.interface';
 
 const ACCEPTED_BRANCHES = ['main', 'master'];
 
-export class ListMDFiles implements IListMDFiles {
-  constructor(private gitHubApi: GitHubAPI) {}
+type TreeNode = {
+  name: string;
+  path?: string;
+  items?: TreeNode[];
+};
 
+@injectable()
+export class ListMDFilesService {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   private fileTree(paths: string[], tree: Record<string, any> = {}) {
     return paths.reduce((fullTree, path) => {
@@ -53,14 +59,16 @@ export class ListMDFiles implements IListMDFiles {
     user,
     repo,
   }: GitHubRepoParamsDTO): Promise<TreeNode[] | undefined> {
-    const branches = await this.gitHubApi.getRepoBranches({ user, repo });
+    const githubApi = container.resolve(GitHubAPI);
+
+    const branches = await githubApi.getRepoBranches({ user, repo });
 
     const mainBranch = branches
       .map((branch) => branch.name)
       .find((name) => ACCEPTED_BRANCHES.includes(name));
 
     if (mainBranch) {
-      const branchFiles = await this.gitHubApi.getBranchFiles({
+      const branchFiles = await githubApi.getBranchFiles({
         user,
         repo,
         mainBranch,
@@ -81,6 +89,6 @@ export class ListMDFiles implements IListMDFiles {
       return parsedTree;
     }
 
-    throw new Error('Main branch not found!');
+    throw new AppError(404, 'Main branch not found!');
   }
 }
